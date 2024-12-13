@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - main
-      - develop
   pull_request:
 
 jobs:
@@ -41,13 +40,15 @@ jobs:
         with:
           context: ./simple-api
           tags: ${{ secrets.DOCKER_USERNAME }}/backend:latest
+          push: ${{ github.ref == 'refs/heads/main' }}
 
-      # Build and push database  image
+      # Build and push database image
       - name: Build image and push database
         uses: docker/build-push-action@v3
         with:
           context: ./database
           tags: ${{ secrets.DOCKER_USERNAME }}/database:latest
+          push: ${{ github.ref == 'refs/heads/main' }}
 
       # Build and push http-server image
       - name: Build image and push http-server
@@ -55,3 +56,8 @@ jobs:
         with:
           context: ./http-server
           tags: ${{ secrets.DOCKER_USERNAME }}/http-server:latest
+          push: ${{ github.ref == 'refs/heads/main' }}
+
+      # Debug: List Docker images
+      - name: List Docker images
+        run: docker images
