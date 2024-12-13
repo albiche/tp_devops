@@ -22,7 +22,7 @@ jobs:
         run: mvn clean verify
         working-directory: simple-api
 
-  build-docker-images:
+  build-and-push-docker-image:
     needs: test-backend
     runs-on: ubuntu-22.04
 
@@ -31,26 +31,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2.5.0
 
-      # Build backend image
-      - name: Build backend image
+      # Login to Docker Hub
+      - name: Login to DockerHub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      # Build and push backend image
+      - name: Build image and push backend
         uses: docker/build-push-action@v3
         with:
           context: ./simple-api
-          outputs: type=docker
-          tags: backend:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/backend:latest
 
-      # Build database image
-      - name: Build database image
+      # Build and push database image
+      - name: Build image and push database
         uses: docker/build-push-action@v3
         with:
           context: ./database
-          outputs: type=docker
-          tags: database:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/database:latest
 
-      # Build http-server image
-      - name: Build http-server image
+      # Build and push http-server image
+      - name: Build image and push http-server
         uses: docker/build-push-action@v3
         with:
           context: ./http-server
-          outputs: type=docker
-          tags: http-server:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/http-server:latest
