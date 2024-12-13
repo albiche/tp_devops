@@ -42,7 +42,7 @@ jobs:
           context: ./simple-api
           tags: ${{ secrets.DOCKER_USERNAME }}/backend:latest
 
-      # Build and push database image
+      # Build and push database  image
       - name: Build image and push database
         uses: docker/build-push-action@v3
         with:
