@@ -1,63 +1,84 @@
-name: CI devops 2024
+name: CI Pipeline with SonarCloud
+
 on:
   push:
     branches:
       - main
+      - develop
   pull_request:
 
 jobs:
-  test-backend:
+  test-and-analyze:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2.5.0
+      # Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v2.5.0
 
+      # Set up JDK 17 for Maven
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           java-version: "17"
           distribution: "temurin"
 
+      # Cache Maven dependencies
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      # Build and test the application
       - name: Build and test with Maven
         run: mvn clean verify
         working-directory: simple-api
 
-  build-and-push-docker-image:
-    needs: test-backend
-    runs-on: ubuntu-22.04
+      # SonarCloud analysis
+      - name: SonarCloud Analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: mvn -B verify sonar:sonar \
+             -Dsonar.projectKey=your-project-key \
+             -Dsonar.organization=your-organization-key \
+             -Dsonar.host.url=https://sonarcloud.io \
+             -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
+             --file ./simple-api/pom.xml
 
+  build-and-push-docker-image:
+    needs: test-and-analyze
+    runs-on: ubuntu-22.04
     steps:
       # Checkout the code
       - name: Checkout code
         uses: actions/checkout@v2.5.0
 
-      # Login to Docker Hub
+      # Login to DockerHub
       - name: Login to DockerHub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      # Build and push backend image
-      - name: Build image and push backend
+      # Build backend image
+      - name: Build backend image
         uses: docker/build-push-action@v3
         with:
           context: ./simple-api
           tags: ${{ secrets.DOCKER_USERNAME }}/backend:latest
           push: ${{ github.ref == 'refs/heads/main' }}
 
-      # Build and push database image
-      - name: Build image and push database
+      # Build database image
+      - name: Build database image
         uses: docker/build-push-action@v3
         with:
           context: ./database
           tags: ${{ secrets.DOCKER_USERNAME }}/database:latest
           push: ${{ github.ref == 'refs/heads/main' }}
 
-      # Build and push http-server image
-      - name: Build image and push http-server
+      # Build HTTP server image
+      - name: Build HTTP server image
         uses: docker/build-push-action@v3
         with:
           context: ./http-server
           tags: ${{ secrets.DOCKER_USERNAME }}/http-server:latest
           push: ${{ github.ref == 'refs/heads/main' }}
-
-      # Debug: List Docker images
-      - name: List Docker images
-        run: docker images
