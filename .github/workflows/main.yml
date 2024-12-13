@@ -21,8 +21,3 @@ jobs:
       - name: Build and test with Maven
         run: mvn clean verify
         working-directory: simple-api
-
-    steps:
-      # Checkout the code
-      - name: Checkout code
-        uses: actions/checkout@v2.5.0
