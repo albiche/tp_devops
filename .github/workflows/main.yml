@@ -22,10 +22,6 @@ jobs:
         run: mvn clean verify
         working-directory: simple-api
 
-  build-and-push-docker-image:
-    needs: test-backend
-    runs-on: ubuntu-22.04
-
     steps:
       # Checkout the code
       - name: Checkout code
