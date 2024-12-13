@@ -21,3 +21,36 @@ jobs:
       - name: Build and test with Maven
         run: mvn clean verify
         working-directory: simple-api
+
+  build-docker-images:
+    needs: test-backend
+    runs-on: ubuntu-22.04
+
+    steps:
+      # Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v2.5.0
+
+      # Build backend image
+      - name: Build backend image
+        uses: docker/build-push-action@v3
+        with:
+          context: ./simple-api
+          outputs: type=docker
+          tags: backend:latest
+
+      # Build database image
+      - name: Build database image
+        uses: docker/build-push-action@v3
+        with:
+          context: ./database
+          outputs: type=docker
+          tags: database:latest
+
+      # Build http-server image
+      - name: Build http-server image
+        uses: docker/build-push-action@v3
+        with:
+          context: ./http-server
+          outputs: type=docker
+          tags: http-server:latest
