@@ -1,0 +1,45 @@
+name: Build and Push Docker Images
+
+on:
+  workflow_run:
+    workflows:
+      - Test Backend
+    types:
+      - completed
+
+jobs:
+  build-and-push-docker-image:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-22.04
+    steps:
+      # Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v2.5.0
+
+      # Login to DockerHub
+      - name: Login to DockerHub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      # Build backend image
+      - name: Build backend image
+        uses: docker/build-push-action@v3
+        with:
+          context: ./simple-api
+          tags: ${{ secrets.DOCKER_USERNAME }}/backend:latest
+          push: ${{ github.ref == 'refs/heads/main' }}
+
+      # Build database image
+      - name: Build database image
+        uses: docker/build-push-action@v3
+        with:
+          context: ./database
+          tags: ${{ secrets.DOCKER_USERNAME }}/database:latest
+          push: ${{ github.ref == 'refs/heads/main' }}
+
+      # Build HTTP server image
+      - name: Build HTTP server image
+        uses: docker/build-push-action@v3
+        with:
+          context: ./http-server
+          tags: ${{ secrets.DOCKER_USERNAME }}/http-server:latest
+          push: ${{ github.ref == 'refs/heads/main' }}
